@@ -1,0 +1,1 @@
+mongodb+srv://interviewerAdmin:rSalopSgOidHcHpD@interviewercluster.no5qgtg.mongodb.net/?retryWrites=true&w=majority&appName=InterviewerCluster
