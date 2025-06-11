@@ -3,16 +3,25 @@ const nodemailer = require('nodemailer');
 const ical = require('ical-generator').default;
 const path = require('path');
 const mongoose = require('mongoose');
+const cors = require('cors'); // NEW: Import the CORS middleware
 const app = express();
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/interview_tool')
-    .then(() => console.log('MongoDB connected locally...'))
-    .catch(err => console.log('MongoDB connection error:', err));
+// CHANGED: Use MONGODB_URI environment variable, with a fallback for local development
+const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/interview_tool';
+mongoose.connect(mongoURI, {
+    useNewUrlParser: true,      // Add this option for Mongoose 5.x and older, safe to include for newer versions
+    useUnifiedTopology: true    // Add this option for Mongoose 5.x and older, safe to include for newer versions
+})
+.then(() => console.log('MongoDB Connected successfully!'))
+.catch(err => console.error('MongoDB connection error:', err));
 
-// Middleware to parse JSON, URL-encoded data, and serve static files
+// Middleware to parse JSON, URL-encoded data, serve static files, and handle CORS
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors()); // NEW: Enable CORS for all requests.
+// For production, you might want to restrict this to specific origins for security:
+// app.use(cors({ origin: 'https://your-render-app-url.onrender.com' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Interviewer Schema and Model
@@ -153,14 +162,16 @@ app.get('/match-interviewers/:jobId/:company', async (req, res) => {
         res.status(500).send('Error fetching interviewers.');
     }
 });
+
 // Configure the nodemailer transporter with credentials
+// CHANGED: Use NODEMAILER_USER and NODEMAILER_PASS environment variables
 const transporter = nodemailer.createTransport({
-    host: 'smtp-mail.outlook.com',
+    host: 'smtp-mail.outlook.com', // Keep this host if it's correct for your email provider
     port: 587,
-    secure: false,
+    secure: false, // For port 587, 'secure' is often false (STARTTLS)
     auth: {
-        user: 'icansenderemail@gmail.com',
-        pass: 'glrtguplgxwwrhdn'
+        user: process.env.NODEMAILER_USER, // NEW: Use environment variable
+        pass: process.env.NODEMAILER_PASS  // NEW: Use environment variable
     }
 });
 
@@ -180,7 +191,8 @@ app.post('/send-invite', (req, res) => {
     const icsData = calendar.toString();
 
     let mailOptions = {
-        from: '"icalsender email" <icansenderemail@gmail.com>',
+        // NEW: Use NODEMAILER_USER for the 'from' email address, and optionally a display name
+        from: `"${process.env.NODEMAILER_FROM_NAME || 'Interviewer Portal'}" <${process.env.NODEMAILER_USER}>`,
         to: to, // Email address of the interviewer
         subject: 'Interview Invite',
         text: 'You have an interview scheduled.',
@@ -203,7 +215,8 @@ app.post('/send-invite', (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 3000;
+// Ensure the server listens on the port provided by the hosting environment (Render)
+const PORT = process.env.PORT || 3000; // NEW: Use environment variable for PORT, with fallback
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
