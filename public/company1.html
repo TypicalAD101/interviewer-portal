@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company 1 Dashboard</title>
+    <link rel="stylesheet" href="css/company1.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Company 1 Dashboard</h1>
+            <button onclick="displayJobForm()">Add New Job</button>
+        </header>
+
+        <section id="jobsPosted">
+            <h2>Jobs Posted</h2>
+            <table id="jobTable">
+                <thead>
+                    <tr>
+                        <th>Job Name</th>
+                        <th>Experience Required</th>
+                        <th>Location</th>
+                        <th>Skills Required</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="jobList">
+                    <!-- Job rows will be appended here -->
+                </tbody>
+            </table>
+        </section>
+
+        <section id="interviewersAvailable">
+            <h2>Interviewers Available</h2>
+            <table id="interviewerTable">
+                <thead>
+                    <tr>
+                        <th>Interviewer Name</th>
+                        <th>Rate</th>
+                        <th>Skills</th>
+                        <th>Availability</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="interviewerList">
+                    <!-- Interviewer rows will be appended here -->
+                </tbody>
+            </table>
+        </section>
+
+        <div id="jobForm" style="display: none;">
+            <h2>Add New Job</h2>
+            <form onsubmit="submitJob(event)">
+                <input type="text" id="jobName" placeholder="Job Name" required>
+                <input type="text" id="yearsOfExperience" placeholder="Years of Experience Required" required>
+                <input type="text" id="jobLocation" placeholder="Job Location" required>
+                <input type="text" id="skillsRequired" placeholder="Skills Required" required>
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+
+        <script>
+            function displayJobForm() {
+                document.getElementById('jobForm').style.display = 'block';
+            }
+
+            // Fetch jobs from the /Company1jobs API and display them
+            function displayJobs() {
+                fetch('/Company1jobs') // Updated API endpoint
+                    .then(response => response.json())
+                    .then(jobs => {
+                        const jobTableBody = document.getElementById('jobList');
+                        jobTableBody.innerHTML = '';  // Clear the table before adding rows
+
+                        if (jobs.length === 0) {
+                            jobTableBody.innerHTML = "<tr><td colspan='5'>No jobs created yet.</td></tr>";
+                        } else {
+                            jobs.forEach((job, index) => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${job.jobName}</td>
+                                    <td>${job.experienceRequired}</td>
+                                    <td>${job.location}</td>
+                                    <td>${job.skillsRequired}</td>
+                                    <td><button onclick="getInterviewer(${index})">Get Interviewer</button></td>
+                                `;
+                                jobTableBody.appendChild(row);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching jobs:', error);
+                    });
+            }
+
+            function displayInterviewers() {
+                fetch('/interviewers')  // Ensure this endpoint is correct and server is running
+                    .then(response => response.json())
+                    .then(interviewers => {
+                        const interviewerTableBody = document.getElementById('interviewerList');
+                        interviewerTableBody.innerHTML = '';  // Clear the table before adding rows
+
+                        if (interviewers.length === 0) {
+                            interviewerTableBody.innerHTML = "<tr><td colspan='5'>No interviewers available yet.</td></tr>";
+                        } else {
+                            interviewers.forEach((interviewer) => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${interviewer.name}</td>
+                                    <td>${interviewer.rate}/hr</td>
+                                    <td>${interviewer.skills}</td>
+                                    <td>${interviewer.availability}</td>
+                                    <td><button onclick="contactInterviewer('${interviewer.name}')">Contact this interviewer</button></td>
+                                `;
+                                interviewerTableBody.appendChild(row);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching interviewers:', error);
+                    });
+            }
+
+            function getInterviewer(jobIndex) {
+    fetch('/Company1jobs')
+        .then(response => response.json())
+        .then(jobs => {
+            const selectedJob = jobs[jobIndex];
+            sessionStorage.setItem('selectedJobId', selectedJob._id); // Store the job ID
+            sessionStorage.setItem('selectedCompany', 'company1'); // Store the company name
+            sessionStorage.setItem('selectedJobSkills', selectedJob.skillsRequired); // Pass job skills
+            sessionStorage.setItem('selectedJobName', selectedJob.jobName); // Pass job name
+            window.location.href = 'interviewer_list.html';
+        })
+        .catch(err => console.error('Error fetching job details:', err));
+}
+
+            function contactInterviewer(name) {
+                alert(`Contacted interviewer ${name}`);
+            }
+
+            window.onload = function() {
+                displayJobs();  // Fetch jobs from MongoDB when the page loads
+                displayInterviewers();  // Fetch and display interviewers when the page loads
+            };
+        </script>
+</body>
+</html>

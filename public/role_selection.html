@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Your Role</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="role-selection-container">
+        <h1>Select Your Role</h1>
+        <div class="role-options">
+            <button onclick="location.href='company_login.html'">Company</button>
+            <button onclick="showInterviewerOptions()">Interviewer</button>
+        </div>
+    </div>
+
+    <script>
+        function showInterviewerOptions() {
+            const option = confirm("Do you have an account?");
+            if (option) {
+                window.location.href = 'interviewer_login.html';  // Redirect to login if they have an account
+            } else {
+                window.location.href = 'interviewer_register.html';  // Redirect to registration if they don't have an account
+            }
+        }
+    </script>
+</body>
+</html>

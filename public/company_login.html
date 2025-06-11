@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Login</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="login-container">
+        <h1>Company Login</h1>
+        <form onsubmit="loginCompany(event)">
+            <label for="company">Select Company:</label>
+            <select id="company" required>
+                <option value="company1">Company 1</option>
+                <option value="company2">Company 2</option>
+                <option value="company3">Company 3</option>
+            </select>
+
+            <input type="password" id="password" placeholder="Password" required>
+
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <script>
+        function loginCompany(event) {
+            event.preventDefault();
+            const company = document.getElementById('company').value;
+            const password = document.getElementById('password').value;
+
+            if (password === 'abcd') {
+                window.location.href = company + ".html";  // Redirects to company1.html, company2.html, or company3.html
+            } else {
+                alert("Incorrect password");
+            }
+        }
+    </script>
+</body>
+</html>

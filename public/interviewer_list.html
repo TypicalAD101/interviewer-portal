@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matched Interviewers</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="jobTitle">Interviewers for [Job Name]</h1>
+        </header>
+
+        <section id="matchedInterviewers">
+            <h2>Matched Interviewers</h2>
+            <table id="matchedInterviewerTable">
+                <thead>
+                    <tr>
+                        <th>Interviewer Name</th>
+                        <th>Rate</th>
+                        <th>Skills</th>
+                        <th>Availability</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="matchedInterviewerList">
+                    <!-- Matched interviewer rows will be appended here -->
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <!-- Popup Modal for Date/Time Selection -->
+    <div id="popupModal" style="display:none; position:fixed; top:20%; left:30%; background-color:#fff; padding:20px; box-shadow:0 0 10px #000;">
+        <h3 id="modalInterviewerName"></h3>
+        <p id="modalInterviewerAvailability"></p>
+        <label for="eventDate">Select Date:</label>
+        <input type="date" id="eventDate" required>
+        <label for="eventTime">Select Time:</label>
+        <input type="time" id="eventTime" required>
+        <button onclick="submitInvite()">Submit</button>
+        <button onclick="closePopup()">Cancel</button>
+    </div>
+
+    <script>
+        let selectedEmail = '';
+        let selectedName = '';
+
+        function displayMatchedInterviewers() {
+            const jobId = sessionStorage.getItem('selectedJobId');
+            const company = sessionStorage.getItem('selectedCompany');
+
+            fetch(`/match-interviewers/${jobId}/${company}`)
+                .then(response => response.json())
+                .then(interviewers => {
+                    const matchedInterviewerTableBody = document.getElementById('matchedInterviewerList');
+                    matchedInterviewerTableBody.innerHTML = '';
+
+                    interviewers.forEach(interviewer => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${interviewer.name}</td>
+                            <td>${interviewer.rate}/hr</td>
+                            <td>${interviewer.skills}</td>
+                            <td>${interviewer.availability}</td>
+                            <td><button onclick="contactInterviewer('${interviewer.name}', '${interviewer.email}', '${interviewer.availability}')">Contact this interviewer</button></td>
+                        `;
+                        matchedInterviewerTableBody.appendChild(row);
+                    });
+
+                    if (matchedInterviewerTableBody.children.length === 0) {
+                        matchedInterviewerTableBody.innerHTML = "<tr><td colspan='5'>No interviewers match the required skills.</td></tr>";
+                    }
+                })
+                .catch(error => console.error('Error fetching matched interviewers:', error));
+
+            document.getElementById('jobTitle').innerText = `Interviewers for ${sessionStorage.getItem('selectedJobName')}`;
+        }
+
+        function contactInterviewer(name, email, availability) {
+            if (!email.endsWith('gmail.com') || email === 'in@gmail.com') {
+                alert('Invalid email address for sending invites.');
+                return;
+            }
+
+            selectedEmail = email;
+            selectedName = name;
+
+            document.getElementById('modalInterviewerName').innerText = `Interviewer: ${name}`;
+            document.getElementById('modalInterviewerAvailability').innerText = `Availability: ${availability}`;
+            document.getElementById('popupModal').style.display = 'block';
+        }
+
+        function closePopup() {
+            document.getElementById('popupModal').style.display = 'none';
+        }
+
+        async function submitInvite() {
+            const eventDate = document.getElementById('eventDate').value;
+            const eventTime = document.getElementById('eventTime').value;
+
+            if (!eventDate || !eventTime) {
+                alert('Please select both date and time.');
+                return;
+            }
+
+            const eventStartTime = new Date(`${eventDate}T${eventTime}`);
+            const eventEndTime = new Date(eventStartTime.getTime() + 30 * 60000); // 30 mins later
+
+            const icsData = `
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:Interview Invitation
+DTSTART:${eventStartTime.toISOString().replace(/[-:]/g, '').split('.')[0]}Z
+DTEND:${eventEndTime.toISOString().replace(/[-:]/g, '').split('.')[0]}Z
+DESCRIPTION:Interview with ${selectedName}
+LOCATION:Online
+END:VEVENT
+END:VCALENDAR
+            `.trim();
+
+            const serviceID = 'service_k5unont';
+            const userID = '-EiPxGds6dU_YhJyv';
+            const templateParams = {
+                to_email: selectedEmail,
+                subject: 'Interview Invitation',
+                message_text: `Dear ${selectedName}, you have been invited to an interview.`,
+                message_html: `<b>Dear ${selectedName}, please find the attached interview invite.</b>`,
+                attachment: btoa(unescape(encodeURIComponent(icsData)))
+            };
+
+            try {
+                const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        service_id: serviceID,
+                        user_id: userID,
+                        template_id: 'template_rhu7ffy',
+                        template_params: templateParams,
+                    }),
+                });
+
+                if (response.ok) {
+                    alert('Invite sent successfully to ' + selectedName);
+                    closePopup();
+                } else {
+                    alert('Failed to send invite.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        window.onload = function() {
+            displayMatchedInterviewers();
+        };
+    </script>
+</body>
+</html>

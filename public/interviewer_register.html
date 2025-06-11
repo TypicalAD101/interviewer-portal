@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interviewer Registration</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Interviewer Registration</h1>
+        <form id="registerForm">
+            <input type="text" id="name" placeholder="Name" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <input type="text" id="number" placeholder="Contact Number" required>
+            <input type="text" id="rate" placeholder="Rate of Interview ($/hr)" required>
+
+            <div id="availabilitySection">
+                <h3>Availability</h3>
+                <div id="availabilitySlots">
+                    <!-- Time slots will be dynamically added here -->
+                </div>
+                <button type="button" onclick="addTimeSlot()">Add Availability Slot</button>
+            </div>
+
+            <input type="text" id="skills" placeholder="Skills (e.g. Python, Data Science)" required>
+            <button type="submit">Register</button>
+        </form>
+        <p>Already have an account? <a href="interviewer_login.html">Login here</a>.</p>
+    </div>
+
+    <script>
+        // Function to dynamically add time slots for availability
+        function addTimeSlot() {
+            const availabilitySlots = document.getElementById('availabilitySlots');
+            const slotDiv = document.createElement('div');
+            slotDiv.classList.add('availabilitySlot');
+            slotDiv.innerHTML = `
+                <select class="dayOfWeek">
+                    <option value="Mon">Monday</option>
+                    <option value="Tue">Tuesday</option>
+                    <option value="Wed">Wednesday</option>
+                    <option value="Thu">Thursday</option>
+                    <option value="Fri">Friday</option>
+                    <option value="Sat">Saturday</option>
+                    <option value="Sun">Sunday</option>
+                </select>
+                <input type="time" class="startTime" required>
+                <input type="time" class="endTime" required>
+                <button type="button" onclick="removeTimeSlot(this)">Remove</button>
+            `;
+            availabilitySlots.appendChild(slotDiv);
+        }
+
+        // Function to remove a specific time slot
+        function removeTimeSlot(button) {
+            const slotDiv = button.parentElement;
+            slotDiv.remove();
+        }
+
+        // Register the interviewer by sending data to the backend
+        document.getElementById('registerForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevent the form from submitting the traditional way
+
+            const interviewer = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                number: document.getElementById('number').value,
+                rate: document.getElementById('rate').value,
+                skills: document.getElementById('skills').value,
+                availability: collectAvailability()
+            };
+
+            fetch('/add-interviewer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(interviewer)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Interviewer added:', data);
+                alert('Registration successful!');
+                window.location.href = "interviewer_login.html";
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error registering interviewer.');
+            });
+        });
+
+        function collectAvailability() {
+            const availability = [];
+            const slots = document.querySelectorAll('.availabilitySlot');
+            slots.forEach(slot => {
+                const dayOfWeek = slot.querySelector('.dayOfWeek').value;
+                const startTime = slot.querySelector('.startTime').value;
+                const endTime = slot.querySelector('.endTime').value;
+                availability.push(`${dayOfWeek} (${startTime} - ${endTime})`);
+            });
+            return availability.join(', ');
+        }
+    </script>
+</body>
+</html>

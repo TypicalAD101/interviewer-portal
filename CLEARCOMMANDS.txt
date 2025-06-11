@@ -1,0 +1,7 @@
+// Clear all job data for all companies
+localStorage.removeItem('company1Jobs');
+localStorage.removeItem('company2Jobs');
+localStorage.removeItem('company3Jobs');
+
+// Clear all interviewers data
+localStorage.removeItem('interviewers');

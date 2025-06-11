@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Jobs</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Available Jobs</h1>
+        <div id="companyJobs">
+            <!-- Job tables for different companies will be loaded here -->
+        </div>
+    </div>
+
+    <script>
+        function loadCompanyJobs(company, jobs) {
+            const companyDiv = document.createElement('div');
+            companyDiv.classList.add('company-jobs');
+            companyDiv.innerHTML = `<h2>${company}</h2>`;
+
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Job Name</th>
+                        <th>Experience Required</th>
+                        <th>Location</th>
+                    </tr>
+                </thead>
+            `;
+            const tbody = document.createElement('tbody');
+
+            if (jobs.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='3'>No jobs available.</td></tr>";
+            } else {
+                jobs.forEach((job) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${job.jobName}</td>
+                        <td>${job.yearsOfExperience} years</td>
+                        <td>${job.jobLocation}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            table.appendChild(tbody);
+            companyDiv.appendChild(table);
+            document.getElementById('companyJobs').appendChild(companyDiv);
+        }
+
+        function loadJobs() {
+            const company1Jobs = JSON.parse(localStorage.getItem('company1Jobs')) || [];
+            const company2Jobs = JSON.parse(localStorage.getItem('company2Jobs')) || [];
+            const company3Jobs = JSON.parse(localStorage.getItem('company3Jobs')) || [];
+
+            loadCompanyJobs('Company 1', company1Jobs);
+            loadCompanyJobs('Company 2', company2Jobs);
+            loadCompanyJobs('Company 3', company3Jobs);
+        }
+
+        window.onload = loadJobs;
+    </script>
+</body>
+</html>
