@@ -11,7 +11,7 @@ const app = express();
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/interview_tool';
 mongoose.connect(mongoURI, {
     useNewUrlParser: true,      // Add this option for Mongoose 5.x and older, safe to include for newer versions
-    useUnifiedTopology: true    // Add this option for Mongoose 5.x and older, safe to include for newer versions
+    useUnifiedTopology: true    // Add this option for new server discovery and monitoring engine
 })
 .then(() => console.log('MongoDB Connected successfully!'))
 .catch(err => console.error('MongoDB connection error:', err));
@@ -23,6 +23,7 @@ app.use(cors()); // NEW: Enable CORS for all requests.
 // For production, you might want to restrict this to specific origins for security:
 // app.use(cors({ origin: 'https://your-render-app-url.onrender.com' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Interviewer Schema and Model
 const interviewerSchema = new mongoose.Schema({
@@ -92,6 +93,33 @@ app.get('/Company3jobs', async (req, res) => {
         res.status(200).json(jobs);
     } catch (err) {
         res.status(500).send('Error fetching jobs from Company3.');
+    }
+});
+
+// NEW: API route to add a new job for Company1
+app.post('/add-job-company1', async (req, res) => {
+    try {
+        const { jobName, yearsOfExperience, jobLocation, skillsRequired } = req.body;
+
+        // Basic validation (you might want more robust validation)
+        if (!jobName || !yearsOfExperience || !jobLocation || !skillsRequired) {
+            return res.status(400).json({ success: false, message: 'All job fields are required.' });
+        }
+
+        // Assuming this form on company1.html adds jobs to the Company1jobs collection
+        const newJob = new Company1Job({
+            jobName,
+            yearsOfExperience,
+            jobLocation,
+            skillsRequired
+        });
+
+        const savedJob = await newJob.save();
+        console.log('New job added:', savedJob);
+        res.status(201).json({ success: true, message: 'Job added successfully!', job: savedJob });
+    } catch (err) {
+        console.error('Error saving new job:', err);
+        res.status(500).json({ success: false, message: 'Failed to add job.', error: err.message });
     }
 });
 
@@ -166,12 +194,12 @@ app.get('/match-interviewers/:jobId/:company', async (req, res) => {
 // Configure the nodemailer transporter with credentials
 // CHANGED: Use NODEMAILER_USER and NODEMAILER_PASS environment variables
 const transporter = nodemailer.createTransport({
-    host: 'smtp-mail.outlook.com', // Keep this host if it's correct for your email provider
+    host: 'smtp-mail.outlook.com',
     port: 587,
-    secure: false, // For port 587, 'secure' is often false (STARTTLS)
+    secure: false,
     auth: {
-        user: process.env.NODEMAILER_USER, // NEW: Use environment variable
-        pass: process.env.NODEMAILER_PASS  // NEW: Use environment variable
+        user: process.env.NODEMAILER_USER, // Use environment variable
+        pass: process.env.NODEMAILER_PASS  // Use environment variable
     }
 });
 
@@ -216,7 +244,7 @@ app.post('/send-invite', (req, res) => {
 
 // Start the server
 // Ensure the server listens on the port provided by the hosting environment (Render)
-const PORT = process.env.PORT || 3000; // NEW: Use environment variable for PORT, with fallback
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
