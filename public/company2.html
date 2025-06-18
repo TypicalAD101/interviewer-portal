@@ -26,8 +26,7 @@
                     </tr>
                 </thead>
                 <tbody id="jobList">
-                    <!-- Job rows will be appended here -->
-                </tbody>
+                    </tbody>
             </table>
         </section>
 
@@ -44,20 +43,19 @@
                     </tr>
                 </thead>
                 <tbody id="interviewerList">
-                    <!-- Interviewer rows will be appended here -->
-                </tbody>
+                    </tbody>
             </table>
         </section>
 
         <div id="jobForm" style="display: none;">
             <h2>Add New Job</h2>
-            <form onsubmit="submitJob(event)">
+            <form id="addNewJobForm" onsubmit="submitJob(event)">
                 <input type="text" id="jobName" placeholder="Job Name" required>
                 <input type="text" id="yearsOfExperience" placeholder="Years of Experience Required" required>
                 <input type="text" id="jobLocation" placeholder="Job Location" required>
                 <input type="text" id="skillsRequired" placeholder="Skills Required" required>
                 <button type="submit">Submit</button>
-            </form>
+                <button type="button" onclick="hideJobForm()">Cancel</button> </form>
         </div>
 
         <script>
@@ -65,9 +63,58 @@
                 document.getElementById('jobForm').style.display = 'block';
             }
 
+            // NEW: Function to hide the job form and clear fields
+            function hideJobForm() {
+                document.getElementById('jobForm').style.display = 'none';
+                document.getElementById('addNewJobForm').reset(); // Clear form fields
+            }
+
+            // NEW: Implement the submitJob function for Company 2
+            async function submitJob(event) {
+                event.preventDefault(); // Prevent default form submission (page reload)
+
+                const jobName = document.getElementById('jobName').value;
+                const yearsOfExperience = document.getElementById('yearsOfExperience').value;
+                const jobLocation = document.getElementById('jobLocation').value;
+                const skillsRequired = document.getElementById('skillsRequired').value;
+
+                const jobData = {
+                    jobName,
+                    yearsOfExperience,
+                    jobLocation,
+                    skillsRequired
+                };
+
+                try {
+                    const response = await fetch('/add-job-company2', { // Endpoint for Company 2 jobs
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(jobData),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Failed to add job.');
+                    }
+
+                    const result = await response.json();
+                    console.log('Job for Company 2 added successfully:', result.job);
+                    alert('Job for Company 2 added successfully!');
+
+                    hideJobForm();   // Hide the form
+                    displayJobs();   // Refresh the jobs list to show the new job
+
+                } catch (error) {
+                    console.error('Error adding job:', error);
+                    alert(`Error adding job: ${error.message}`);
+                }
+            }
+
             // Fetch jobs from the /Company2jobs API and display them
             function displayJobs() {
-                fetch('/Company2jobs') // Updated API endpoint for Company2
+                fetch('/Company2jobs') // API endpoint for Company2
                     .then(response => response.json())
                     .then(jobs => {
                         const jobTableBody = document.getElementById('jobList');
@@ -76,13 +123,12 @@
                         if (jobs.length === 0) {
                             jobTableBody.innerHTML = "<tr><td colspan='5'>No jobs created yet.</td></tr>";
                         } else {
-                            jobs.forEach((job) => {
+                            jobs.forEach((job, index) => {
                                 const row = document.createElement('tr');
+                                // Ensure field names match your Mongoose schema (yearsOfExperience, jobLocation)
                                 row.innerHTML = `
                                     <td>${job.jobName}</td>
-                                    <td>${job.experienceRequired}</td>
-                                    <td>${job.location}</td>
-                                    <td>${job.skillsRequired}</td>
+                                    <td>${job.yearsOfExperience || 'N/A'}</td> <td>${job.jobLocation || 'N/A'}</td>    <td>${job.skillsRequired}</td>
                                     <td>
                                         <button onclick="getInterviewer('${job._id}', '${job.skillsRequired}', '${job.jobName}')">
                                             Get Interviewer
@@ -95,6 +141,7 @@
                     })
                     .catch(error => {
                         console.error('Error fetching jobs:', error);
+                        document.getElementById('jobList').innerHTML = "<tr><td colspan='5'>Failed to load jobs.</td></tr>";
                     });
             }
 
@@ -123,6 +170,7 @@
                     })
                     .catch(error => {
                         console.error('Error fetching interviewers:', error);
+                        document.getElementById('interviewerList').innerHTML = "<tr><td colspan='5'>Failed to load interviewers.</td></tr>";
                     });
             }
 
@@ -130,7 +178,7 @@
                 sessionStorage.setItem('selectedJobId', jobId); // Store Job ID
                 sessionStorage.setItem('selectedJobSkills', skills); // Store Skills
                 sessionStorage.setItem('selectedJobName', jobName); // Store Job Name
-                sessionStorage.setItem('selectedCompany', 'company2'); // Update for Company2
+                sessionStorage.setItem('selectedCompany', 'company2'); // Set company to 'company2'
                 window.location.href = 'interviewer_list.html';
             }
 

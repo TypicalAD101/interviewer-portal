@@ -123,6 +123,34 @@ app.post('/add-job-company1', async (req, res) => {
     }
 });
 
+// NEW: API route to add a new job for Company2
+app.post('/add-job-company2', async (req, res) => {
+    try {
+        const { jobName, yearsOfExperience, jobLocation, skillsRequired } = req.body;
+
+        // Basic validation
+        if (!jobName || !yearsOfExperience || !jobLocation || !skillsRequired) {
+            return res.status(400).json({ success: false, message: 'All job fields are required.' });
+        }
+
+        // Save job to the Company2jobs collection
+        const newJob = new Company2Job({ // Using Company2Job model here
+            jobName,
+            yearsOfExperience,
+            jobLocation,
+            skillsRequired
+        });
+
+        const savedJob = await newJob.save();
+        console.log('New job for Company 2 added:', savedJob);
+        res.status(201).json({ success: true, message: 'Job for Company 2 added successfully!', job: savedJob });
+    } catch (err) {
+        console.error('Error saving new job for Company 2:', err);
+        res.status(500).json({ success: false, message: 'Failed to add job for Company 2.', error: err.message });
+    }
+});
+
+
 // API route to get all interviewers from MongoDB
 app.get('/interviewers', async (req, res) => {
     try {
