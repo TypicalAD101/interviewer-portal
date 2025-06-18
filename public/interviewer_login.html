@@ -36,6 +36,13 @@
             .then(data => {
                 if (data.success) {
                     alert('Login successful!');
+                    // NEW: Store additional interviewer details in sessionStorage
+                    sessionStorage.setItem('interviewerId', data.interviewer._id); // Storing ID
+                    sessionStorage.setItem('interviewerName', data.interviewer.name); // Storing name
+                    sessionStorage.setItem('interviewerSkills', data.interviewer.skills); // NEW: Store skills
+                    sessionStorage.setItem('interviewerRate', data.interviewer.rate); // NEW: Store rate
+                    sessionStorage.setItem('interviewerAvailability', data.interviewer.availability); // NEW: Store availability
+
                     window.location.href = "interviewer_jobs.html"; // Redirect to jobs page
                 } else {
                     alert('Invalid email or password!');
