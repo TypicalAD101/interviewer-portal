@@ -9,16 +9,16 @@
 <body>
     <div class="container">
         <h1>Available Jobs</h1>
-        <div id="companyJobs">
-            <!-- Job tables for different companies will be loaded here -->
-        </div>
+        <button onclick="logout()">Logout</button> <div id="companyJobs">
+            </div>
     </div>
 
     <script>
-        function loadCompanyJobs(company, jobs) {
+        // Helper function to load and display jobs for a specific company
+        function loadCompanyJobs(companyName, jobs, interviewerSkills) {
             const companyDiv = document.createElement('div');
             companyDiv.classList.add('company-jobs');
-            companyDiv.innerHTML = `<h2>${company}</h2>`;
+            companyDiv.innerHTML = `<h2>${companyName}</h2>`;
 
             const table = document.createElement('table');
             table.innerHTML = `
@@ -27,20 +27,37 @@
                         <th>Job Name</th>
                         <th>Experience Required</th>
                         <th>Location</th>
-                    </tr>
+                        <th>Skills Required</th>
+                        <th>Action</th> </tr>
                 </thead>
             `;
             const tbody = document.createElement('tbody');
 
-            if (jobs.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='3'>No jobs available.</td></tr>";
+            // Filter jobs by interviewer skills (case-insensitive)
+            const filteredJobs = jobs.filter(job => {
+                const jobSkillsArray = job.skillsRequired ? job.skillsRequired.split(',').map(s => s.trim().toLowerCase()) : [];
+                const interviewerSkillsArray = interviewerSkills ? interviewerSkills.split(',').map(s => s.trim().toLowerCase()) : [];
+                
+                // Check if any of the job's required skills are present in interviewer's skills
+                return jobSkillsArray.some(skill => interviewerSkillsArray.includes(skill));
+            });
+
+
+            if (filteredJobs.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='5'>No matching jobs available for your skills.</td></tr>";
             } else {
-                jobs.forEach((job) => {
+                filteredJobs.forEach((job) => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${job.jobName}</td>
-                        <td>${job.yearsOfExperience} years</td>
-                        <td>${job.jobLocation}</td>
+                        <td>${job.yearsOfExperience || job.experienceRequired || 'N/A'} years</td>
+                        <td>${job.jobLocation || job.location || 'N/A'}</td>
+                        <td>${job.skillsRequired}</td>
+                        <td>
+                            <button onclick="acceptJob('${job._id}', '${companyName}', '${job.skillsRequired}', '${job.jobName}')">
+                                Accept Job
+                            </button>
+                        </td>
                     `;
                     tbody.appendChild(row);
                 });
@@ -50,17 +67,63 @@
             document.getElementById('companyJobs').appendChild(companyDiv);
         }
 
-        function loadJobs() {
-            const company1Jobs = JSON.parse(localStorage.getItem('company1Jobs')) || [];
-            const company2Jobs = JSON.parse(localStorage.getItem('company2Jobs')) || [];
-            const company3Jobs = JSON.parse(localStorage.getItem('company3Jobs')) || [];
+        // UPDATED: Function to fetch all jobs from backend and display them
+        async function displayJobs() {
+            const companyJobsContainer = document.getElementById('companyJobs');
+            companyJobsContainer.innerHTML = ''; // Clear previous content
 
-            loadCompanyJobs('Company 1', company1Jobs);
-            loadCompanyJobs('Company 2', company2Jobs);
-            loadCompanyJobs('Company 3', company3Jobs);
+            // Retrieve interviewer skills from sessionStorage
+            const interviewerSkills = sessionStorage.getItem('interviewerSkills');
+            if (!interviewerSkills) {
+                alert('Interviewer skills not found. Please log in again.');
+                window.location.href = 'interviewer_login.html'; // Redirect to login
+                return;
+            }
+
+            try {
+                // Fetch jobs from all three companies
+                const [response1, response2, response3] = await Promise.all([
+                    fetch('/Company1jobs'),
+                    fetch('/Company2jobs'),
+                    fetch('/Company3jobs')
+                ]);
+
+                const company1Jobs = await response1.json();
+                const company2Jobs = await response2.json();
+                const company3Jobs = await response3.json();
+
+                // Load and display jobs for each company, filtered by interviewer skills
+                loadCompanyJobs('Company 1', company1Jobs, interviewerSkills);
+                loadCompanyJobs('Company 2', company2Jobs, interviewerSkills);
+                loadCompanyJobs('Company 3', company3Jobs, interviewerSkills);
+
+            } catch (error) {
+                console.error('Error fetching jobs:', error);
+                companyJobsContainer.innerHTML = '<p>Failed to load jobs. Please try again later.</p>';
+            }
         }
 
-        window.onload = loadJobs;
+        // Original acceptJob function (review its purpose for final flow)
+        // Note: The original acceptJob in interviewer_jobs.html redirected to interviewer_enroll.html
+        // which seems inconsistent with "accepting a job". It is preserved here but consider its
+        // intended functionality in your application's flow.
+        function acceptJob(jobId, companyName, jobSkills, jobName) {
+            sessionStorage.setItem('selectedJobId', jobId);
+            sessionStorage.setItem('selectedCompany', companyName.toLowerCase().replace(/\s/g, ''));
+            sessionStorage.setItem('selectedJobSkills', jobSkills);
+            sessionStorage.setItem('selectedJobName', jobName);
+            alert(`You have accepted the job: "${jobName}" from ${companyName}.`);
+            // This currently redirects to interviewer_enroll.html, which is for registration.
+            // You might want to change this redirection based on your actual workflow for accepting a job.
+            // window.location.href = 'interviewer_enroll.html'; // This was the original redirection
+        }
+
+        function logout() {
+            sessionStorage.clear(); // Clear all session storage items
+            window.location.href = 'welcome.html'; // Redirect to welcome page or login page
+        }
+
+        window.onload = displayJobs; // Call displayJobs when the page loads
     </script>
 </body>
 </html>
