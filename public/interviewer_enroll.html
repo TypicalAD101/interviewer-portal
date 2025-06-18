@@ -9,48 +9,62 @@
 <body>
     <div class="container">
         <h1>Interviewer Enrollment</h1>
-        <form onsubmit="enrollInterviewer(event)">
-            <input type="text" id="name" placeholder="Name" required>
+        <form onsubmit="addInterviewer(event)"> <input type="text" id="name" placeholder="Name" required>
             <input type="text" id="number" placeholder="Contact Number" required>
             <input type="number" id="rate" placeholder="Rate of Interview ($/hr)" required>
-            <input type="date" id="dates_available" required>
-            <input type="time" id="time_available" required>
-            <button type="submit">Enroll</button>
+            <input type="text" id="skills" placeholder="Skills (e.g., JavaScript, Python)" required> <input type="text" id="availability" placeholder="Availability (e.g., Mon-Fri, 9am-5pm MST)" required> <button type="submit">Enroll</button>
         </form>
     </div>
 
     <script>
-        async function enrollInterviewer(event) {
+        async function addInterviewer(event) { // CHANGED: Renamed function to addInterviewer
             event.preventDefault();
 
-            const interviewer = {
+            // NEW: Retrieve email and password from sessionStorage
+            const email = sessionStorage.getItem('interviewerEmail');
+            const password = sessionStorage.getItem('interviewerPassword');
+
+            // Basic validation for email and password
+            if (!email || !password) {
+                alert("Error: Email and password not found. Please register first.");
+                window.location.href = "interviewer_register.html"; // Redirect to register if missing
+                return;
+            }
+
+            const interviewerData = { // CHANGED: Renamed variable to interviewerData for clarity
                 name: document.getElementById('name').value,
+                email: email, // NEW: Add email from sessionStorage
+                password: password, // NEW: Add password from sessionStorage
                 number: document.getElementById('number').value,
                 rate: document.getElementById('rate').value,
-                dates_available: document.getElementById('dates_available').value,
-                time_available: document.getElementById('time_available').value
+                skills: document.getElementById('skills').value, // NEW: Collect Skills
+                availability: document.getElementById('availability').value // NEW: Collect Availability
+                // Removed dates_available and time_available as they are not in Interviewer model
             };
 
             try {
-                const response = await fetch('/api/interviewer/enroll', {
+                // CHANGED: Correct API endpoint to /add-interviewer
+                const response = await fetch('/add-interviewer', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(interviewer)
+                    body: JSON.stringify(interviewerData) // CHANGED: Use interviewerData
                 });
 
                 const result = await response.json();
                 if (response.ok) {
-                    alert("You have successfully enrolled!");
-                    window.location.href = "interviewer_jobs.html";
+                    alert("You have successfully enrolled and your profile is complete!");
+                    sessionStorage.removeItem('interviewerEmail'); // NEW: Clear email from session
+                    sessionStorage.removeItem('interviewerPassword'); // NEW: Clear password from session
+                    window.location.href = "interviewer_login.html"; // CHANGED: Redirect to login page
                 } else {
-                    console.error(result);
-                    alert("Error enrolling interviewer: " + result.message);
+                    console.error("Enrollment failed:", result);
+                    alert("Error enrolling interviewer: " + (result.message || "Please try again."));
                 }
             } catch (error) {
-                console.error("Error:", error);
-                alert("Error submitting the form.");
+                console.error("Error submitting the form:", error);
+                alert("Error submitting the form. Please check your network and try again.");
             }
         }
     </script>
